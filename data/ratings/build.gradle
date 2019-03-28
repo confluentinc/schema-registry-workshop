@@ -1,0 +1,64 @@
+buildscript {
+  repositories {
+    jcenter()
+  }
+  dependencies {
+    classpath "com.commercehub.gradle.plugin:gradle-avro-plugin:0.14.2"
+  }
+}
+
+apply plugin: 'java'
+apply plugin: 'idea'
+apply plugin: 'application'
+apply plugin: 'groovy'
+apply plugin: "com.commercehub.gradle.plugin.avro"
+
+sourceCompatibility = 1.8
+
+repositories {
+  jcenter()
+  maven {
+    url 'http://packages.confluent.io/maven/'
+  }
+  maven { url "https://repo.spring.io/milestone" }
+}
+
+dependencies {
+  compile 'org.codehaus.groovy:groovy-all:2.4.15'
+  compile 'org.apache.avro:avro:1.8.2'
+  compile 'org.apache.kafka:kafka-clients:2.0.0'
+  compile 'javax.json:javax.json-api:1.1.2'
+  runtime 'org.glassfish:javax.json:1.1.2'
+  compile 'io.confluent:kafka-streams-avro-serde:5.0.0'
+}
+
+def env = System.getenv()
+
+['AvroRatingStreamer', 'JSONRatingStreamer', 'RawRatingStreamer'].each { generatorName ->
+  tasks.create(name: "streamWith${generatorName}", type: JavaExec) {
+    main = generatorName
+    classpath = sourceSets.main.runtimeClasspath
+    args = ["${project.projectDir}/docker-install.properties"]
+  }
+}
+
+task loadAvroMovies(type: JavaExec) {
+  main = 'AvroMovieLoader'
+  classpath = sourceSets.main.runtimeClasspath
+  args "$projectDir/../data/movies.dat"
+  args env['KAFKA_BOOTSTRAP_SERVERS'] ?: 'localhost:9092'
+}
+
+jar {
+  manifest {
+    attributes "Main-Class": ""
+  }
+
+  from {
+    configurations.compile.collect { it.isDirectory() ? it : zipTree(it) }
+  }
+}
+
+avro {
+  stringType = "CharSequence"
+}
