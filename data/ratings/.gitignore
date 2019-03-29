@@ -1,4 +1,12 @@
 gradle/
 build/
 .gradle/
+*.iml
+*.ipr
+*.iws
+bin/
+.project
+.classpath
+.settings/
+out/
 
