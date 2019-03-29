@@ -1,6 +1,6 @@
 # Schema Registry Workshop
 
-Exercises for the Kafka Workshop
+Exercises for the Confluent Schema Registry Workshop
 
 ## Exercise 0: Getting Ready
 
@@ -56,6 +56,7 @@ If you're reading this, you probably know where to find the repo with the instru
 ## Exercise 2: Schemas with REST
 In this exercise we'll design an Avro schema, register it in the Confluent Schema Registry, produce and consume events using this schema, and then modify the schema in compatible and incompatible ways.
 
+0. Start up the Docker environment by running `docker-compose up -d` from the project root directory.
 
 1. Check out the `data/movies-json.js` file. It schema looks something like this:
 
@@ -72,13 +73,13 @@ In this exercise we'll design an Avro schema, register it in the Confluent Schem
 
 2. Create a minimal `.avsc` definition including only `movie_id`, `title`, and `release_year`.
 
-   Avro's [schema definition file is documented online](https://avro.apache.org/docs/1.8.1/spec.html#schemas). We're provide
+   Avro's [schema definition file is documented online](https://avro.apache.org/docs/1.8.1/spec.html#schemas).
 
-3. Now, let's register the schema in the Confluent Schema Registry.
+3. Register the schema in the Confluent Schema Registry.
 
    Instructions can be found in [Schema Registry documentation](https://docs.confluent.io/current/schema-registry/docs/intro.html#quickstart).
 
-   We are registering a schema for values, not keys. And in my case, the records will belong to topic `movies-raw`, so I'll register the schema under the subject `movies-raw-value`.
+   We are registering a schema for values, not keys. We will be producing the records to a topic called `movies-raw`, so we'll register the schema under the _subject_ `movies-raw-value`.
    It is important to note the details of the Schema Registry API for [registering a schema](https://docs.confluent.io/current/schema-registry/docs/api.html#post--subjects-(string-%20subject)-versions). It says:
    ```  
    Request JSON Object:  
@@ -86,12 +87,19 @@ In this exercise we'll design an Avro schema, register it in the Confluent Schem
    schema – The Avro schema string
    ```
    Which means that we need to pass to the API a JSON record, with one key "schema" and the value is a string containing our schema. We can't pass the schema itself when registering it.
-   I used `jq` to wrap our Avro Schema appropriately: `jq -n --slurpfile schema movies-raw.avsc  '$schema | {schema: tostring}'`
-   And then passed the output of `jq` to `curl` with a pipe:    
+
+   If you have the `jq` tool, you can use it to wrap our Avro Schema as follows: `jq -n --slurpfile schema movies-raw.avsc  '$schema | {schema: tostring}'`
+   And then pass the output of `jq` to `curl` with a pipe:    
    ```  
    jq -n --slurpfile schema movies-raw.avsc  '$schema | {schema: tostring}' | curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" --data @- http://localhost:8081/subjects/movies-raw-value/versions  
    ```  
    The output should be an ID. Remember the ID you got, so you can use it when producing and consuming events.  
+
+      If you can't run `jq`, you can reformat the AVSC file into something that looks like this:
+   ```
+   {"schema": "{\"type\": \"record\", \"name\": \"movie\", \"fields\" : [{\"name\": \"movie_id\", \"type\": \"long\"},{\"name\": \"title\", \"type\": \"string\"},{\"name\": \"release_year\", \"type\": \"long\"}] }"}
+    ```
+
 
 4. Now it is time to produce an event with our schema. We'll use the REST Proxy for that.
 
@@ -102,43 +110,49 @@ In this exercise we'll design an Avro schema, register it in the Confluent Schem
    curl -X POST -H "Content-Type: application/vnd.kafka.avro.v2+json" -H "Accept: application/vnd.kafka.v2+json" --data '{"value_schema_id": 1, "records": [{"value": {"movie":{"movie_id": 1, "title": "Ready Player One", "release_year":2018}}}]}'  http://localhost:8082/topics/movies-raw
    ```
   
-5. Let's try to consume some messages.
+5. Let's try to consume some messages. If you don't have `curl`, a browser-based REST client will work.
 
-   I'll use the simple consumer (i.e. read a specific set of messages from a specific partition, rather than subscribe to all new messages in a topic) because it is simple. You can see examples for using the new consumer API in the documentation linked above.
    ```
    curl -H "Accept: application/vnd.kafka.avro.v1+json" "http://localhost:8082/topics/movies-raw/partitions/0/messages?offset=0&count=10"
    ```
 
-6. Now is the fun part. 
+6. Schema changes
 
-   Make some changes to the schema - add fields, remove fields or modify types. Is the result compatible? Let's check with schema registry:
+   Make some changes to the schema. Try each of these: adding fields, removing fields, and modifying fields. Is the result compatible? Let's check with schema registry:
    ```
    jq -n --slurpfile schema movies-raw-new.avsc  '$schema | {schema: tostring}' |curl -X POST -H "Content-Type: application/vnd.schemaregistry.v1+json" --data @- http://localhost:8081/compatibility/subjects/movies-raw-value/versions/latest
    ```
 
-   If you can't run `jq`, you can reformat the AVSC file into something that looks like this:
-   ```
-   {"schema": "{\"type\": \"record\", \"name\": \"movie\", \"fields\" : [{\"name\": \"movie_id\", \"type\": \"long\"},{\"name\": \"title\", \"type\": \"string\"},{\"name\": \"release_year\", \"type\": \"long\"}] }"}
-    ```
+7. Use the REST Proxy to produce and consume messages with modified schemas, both compatible and in-compatible. Document what happens in each case (adding, removing, modifying).
 
-7. Use the REST Proxy to produce and consume messages with modified schemas, both compatible and in-compatible. What happens?
+8. Using a GET to `/config/subject/raw-movies-value`, report on what the schema comptibility is for the subject. (HINT: it should be `BACKWARD`.) Change it to `FOREWARD` and repeat the in the previous two steps.
 
 
 # Exercise 3: Schemas in Java
 
-THINGS TO DO
+In this exercise, we will repeat what we just did with REST, but in Java.
 
-* Need to explain backward/forward/both compatibility (how to set, how to falsify)
-PUT /config/subject/ {"compatibility" : "..." }
+1. Drop the previous environment by running `docker-compose down` then `docker-compose up -d` again.
 
-* Change compatility, watch produce succeed/fail
+2. Open up the Java project in `data/ratings`. It has a Gradle build that you can run from the command line. If you have a Java IDE, you can generate project files like this:
 
-* Switch to Java mode!
+    * For Eclipse: `gradlew eclipse`
+    * For IntelliJ IDEA: `gradlew idea`
 
-* Get basic schema working through avsc files
-* Write a producer to produce a few movies
-* Write a consumer and run it
-* Add a field to the movie object
-* See it break on consume
-* Change to forward compatibility mode
-* See consume work
+    You should now be able to open the project in the IDE of your choice.
+
+3. The file `src/main/avro/movie.avsc` exists, but is not terribly interesting. Populate it with a minimal schema including `movie_id`, `title`, and `release_year`. NOTE: every time you change the AVSC files, you must run `gradlew generateAvroJava` from the command line to regenerate the Java classes. You can see the generated code in `build/generated-main-avro-java`.
+
+4. `src/main/java/io/confluent/demo/AvroMovieLoader.java` is a partially functioning Kafka producer that loads and parses data from a text file and produces Avro Movie objects to a Kafka topic. Change this class in the following ways:
+
+    * Produce to a topic called `raw-movies`
+    * Load the four fields (`movie_id`, `title`, and `release_year`) in the `parseMovie()` method
+    * Produce only a single line from the text file, not the whole file (for now)
+
+5. `src/main/java/io/confluent/demo/DemoConsumer.java` is a partially functioning Kafka consumer. Modify it to consume Movie objects and print out their contents. Run this consumer to see the Movies you have produced.
+
+6. Add the `directors` field to the `movie.avsc` file, rebuild the schema, and modify the `DemoProducer` and `DemoConsumer` to accommodate the new field. Can you still produce and consume? Try adding an `int` field to `movie.avsc`.
+
+7. Change the compatibility mode of the value field of `raw-movies` to `FORWARD` and remove the fields added in the previous two steps, one at a time. Note the results.
+
+

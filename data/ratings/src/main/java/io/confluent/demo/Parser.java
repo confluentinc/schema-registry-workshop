@@ -34,18 +34,18 @@ public class Parser {
 
 
       Movie movie = new Movie();
-      movie.setMovieId(Long.parseLong(id));
-      movie.setTitle(title);
-      movie.setReleaseYear(Integer.parseInt(releaseYear));
-      movie.setCountry(country);
-      //movie.setRating(Float.parseFloat(rating));
-      movie.setGenres(Parser.parseArray(genres));
-      movie.setActors(Parser.parseArray(actors));
-      movie.setDirectors(Parser.parseArray(directors));
-      movie.setComposers(Parser.parseArray(composers));
-      movie.setScreenwriters(Parser.parseArray(screenwriters));
-      movie.setCinematographer(cinematographer);
-      movie.setProductionCompanies(Parser.parseArray(productionCompanies));
+//      movie.setMovieId(Long.parseLong(id));
+//      movie.setTitle(title);
+//      movie.setReleaseYear(Integer.parseInt(releaseYear));
+//      movie.setCountry(country);
+//      //movie.setRating(Float.parseFloat(rating));
+//      movie.setGenres(Parser.parseArray(genres));
+//      movie.setActors(Parser.parseArray(actors));
+//      movie.setDirectors(Parser.parseArray(directors));
+//      movie.setComposers(Parser.parseArray(composers));
+//      movie.setScreenwriters(Parser.parseArray(screenwriters));
+//      movie.setCinematographer(cinematographer);
+//      movie.setProductionCompanies(Parser.parseArray(productionCompanies));
 
       return movie;
    }
@@ -78,18 +78,18 @@ public class Parser {
    static JsonObject toJson(Movie movie) {
       JsonBuilderFactory factory = Json.createBuilderFactory(null);
       return factory.createObjectBuilder()
-              .add("movie_id", movie.getMovieId())
-              .add("title", movie.getTitle().toString())
-              .add("release_year", movie.getReleaseYear())
-              .add("country",movie.getCountry().toString())
-              //.add("rating", movie.getRating())
-              .add("genres", toJsonArrayOfStrings(movie.getGenres()))
-              .add("actors", toJsonArrayOfStrings(movie.getActors()))
-              .add("directors", toJsonArrayOfStrings(movie.getDirectors()))
-              .add("composers", toJsonArrayOfStrings(movie.getComposers()))
-              .add("screenwriters", toJsonArrayOfStrings(movie.getScreenwriters()))
-              .add("production_companies", toJsonArrayOfStrings(movie.getProductionCompanies()))
-              .add("cinematographer", movie.getCinematographer().toString())
+//              .add("movie_id", movie.getMovieId())
+//              .add("title", movie.getTitle().toString())
+//              .add("release_year", movie.getReleaseYear())
+//              .add("country",movie.getCountry().toString())
+//              //.add("rating", movie.getRating())
+//              .add("genres", toJsonArrayOfStrings(movie.getGenres()))
+//              .add("actors", toJsonArrayOfStrings(movie.getActors()))
+//              .add("directors", toJsonArrayOfStrings(movie.getDirectors()))
+//              .add("composers", toJsonArrayOfStrings(movie.getComposers()))
+//              .add("screenwriters", toJsonArrayOfStrings(movie.getScreenwriters()))
+//              .add("production_companies", toJsonArrayOfStrings(movie.getProductionCompanies()))
+//              .add("cinematographer", movie.getCinematographer().toString())
               .build();
    }
 

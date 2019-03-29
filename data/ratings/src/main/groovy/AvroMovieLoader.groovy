@@ -19,10 +19,12 @@ class AvroMovieLoader {
          long currentTime = System.currentTimeSeconds()
          println currentTime
 
+         long seq = 0;
          println args[1]
          def movieFile = new File(args[0])
          movieFile.eachLine { line ->
            Movie movie = Parser.parseMovie(line)
+
            def pr = new ProducerRecord('raw-movies', movie.movieId, movie)
            producer.send(pr)
          }
